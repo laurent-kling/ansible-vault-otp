@@ -1,0 +1,10 @@
+
+policy_module(vault-opt-allow, 1.0)
+
+require {
+	type sshd_t;
+}
+
+#============= sshd_t ==============
+corenet_tcp_connect_trivnet1_port(sshd_t)
+logging_manage_generic_logs(sshd_t)

@@ -1,0 +1,8 @@
+#pas de scories Mac
+.DS_Store
+
+#pas de certificat
+vault.crt
+
+#pas le fichier de variables pour les test avec molecule
+vars.yml

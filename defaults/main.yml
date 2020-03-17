@@ -1,0 +1,14 @@
+---
+# defaults file for ansible-vault-otp
+ssh_mount_point: ssh
+vault_ca_cert_file: "-dev" #only if the server is http !
+# minimum variables needed
+required_vars:
+ - vault_addr
+ - ssh_mount_point
+ - vault_ca_cert_file
+# predefined variables
+tls_skip_verify: !!str true
+allowed_roles: "*"
+# internal variables
+ca_cert: /etc/vault-ssh-helper.d/vault.crt

@@ -1,0 +1,26 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: vagrant
+  provider:
+    name: virtualbox
+lint:
+  name: yamllint
+platforms:
+  - name: vagrant-ubuntu
+    box: bento/ubuntu-18.04
+    memory: 512
+    cpus: 1
+  - name: vagrant-centos
+    box: bento/centos-7.7
+    memory: 512
+    cpus: 1
+provisioner:
+  name: ansible
+  lint:
+    name: ansible-lint
+verifier:
+  name: goss
+  lint:
+    name: yamllint

@@ -1,0 +1,11 @@
+---
+- name: Converge
+  hosts: all
+  #with vagrant, need to be elevated !
+  become: true
+
+  vars_files:
+  - vars.yml
+
+  roles:
+    - role: ansible-vault-otp

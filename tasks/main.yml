@@ -1,0 +1,155 @@
+---
+# tasks file for ansible-vault-otp
+## check minimum parameters
+- name: 0-Check required variables
+  fail: msg="Variable '{{ item }}' is not defined"
+  when: item not in vars
+  with_items: "{{ required_vars }}"
+
+- name: 0-Check coherence between Vault https and certificate file
+  fail:
+    msg: "https server need a certificate file !, {{ vault_addr }} - {{ vault_ca_cert_file }}"
+  when: (vault_addr.find("https") != -1) and (vault_ca_cert_file == '-dev')
+
+- name: 0-Check vault status
+  uri:
+    url: "{{ vault_addr }}/v1/sys/seal-status"
+#    client_cert: "{{ vault_certfile }}"
+    validate_certs: no
+    method: GET
+    body_format: json
+    return_content: yes
+  register: vault_seal_status
+
+- name: fail if the vault server is not awailable
+  fail:
+    msg: "the vault server is sealed"
+  when: vault_seal_status.json.sealed
+
+
+## Do it
+- name: Install unzip
+  package:
+    name: unzip
+    state: present
+
+- name: Download the vault-ssh-helper and unzip it, make executable with root
+  unarchive:
+    src: 'https://releases.hashicorp.com/vault-ssh-helper/0.1.4/vault-ssh-helper_0.1.4_linux_amd64.zip'
+    dest: /usr/local/bin
+    remote_src: yes
+    owner: root
+    group: root
+    mode: '0755'
+  register: task_result
+  #sometime, the download don't work
+  until: task_result is success
+  retries: 10
+  delay: 2
+
+- name: Create a new directory for vault-ssh-helper configuration
+  file:
+    path: "/etc/vault-ssh-helper.d"
+    state: directory
+
+- name: Copy configuration file
+  template:
+    src: config.hcl
+    dest: /etc/vault-ssh-helper.d/config.hcl
+
+- name: Copy vault server certificate
+  copy:
+    src: "vault.crt"
+    dest: "{{ ca_cert }}"
+
+- name: Verify vault-ssh-helper configuration
+  command: "/usr/local/bin/vault-ssh-helper -verify-only -config=/etc/vault-ssh-helper.d/config.hcl"
+  register: verify_vault_ssh_helper
+  changed_when: False
+  #for lint [301] Commands should not change things if nothing needs doing
+  #http://willthames.github.io/2016/09/21/using-command-and-shell-in-ansible.html
+
+- debug: msg="{{verify_vault_ssh_helper.stderr}}"
+
+- name: fail the play if the previous command did not succeed
+  fail:
+    msg: "the configuration failed"
+  when: "'successful' not in verify_vault_ssh_helper.stderr"
+
+
+- name: UBUNTU Modify pam sshd, comment common-auth mechanism
+  lineinfile:
+    firstmatch: yes
+    path: "/etc/pam.d/sshd"
+    regexp: "^@include common-auth"
+    line: "#@include common-auth"
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: CENTOS Modify pam sshd
+  lineinfile:
+    firstmatch: yes
+    path: "/etc/pam.d/sshd"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  with_items:
+    - { regexp: '^auth       substack     password-auth', line: '#auth       substack     password-auth' }
+    - { regexp: '^password   include      password-auth', line: '#password   include      password-auth' }
+  when: ansible_os_family == "RedHat"
+
+
+- name: UBUNTU Insert the vault-ssh-helper configuration for ssh auth
+  blockinfile:
+    path: "/etc/pam.d/sshd"
+    block: |
+      auth requisite pam_exec.so quiet expose_authtok log=/var/log/vaultssh.log /usr/local/bin/vault-ssh-helper -config=/etc/vault-ssh-helper.d/config.hcl
+      auth optional pam_unix.so not_set_pass use_first_pass nodelay
+    insertbefore: BOF
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: CENTOS Insert the vault-ssh-helper configuration for ssh auth
+  blockinfile:
+    path: "/etc/pam.d/sshd"
+    block: |
+      auth requisite pam_exec.so quiet expose_authtok log=/var/log/vaultssh.log /usr/local/bin/vault-ssh-helper -config=/etc/vault-ssh-helper.d/config.hcl
+      auth optional pam_unix.so not_set_pass use_first_pass nodelay
+    insertbefore: "auth       include      postlogin"
+    state: present
+  when: ansible_os_family == "RedHat"
+
+
+- name: ALL Change sshd configurations
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    - { regexp: '^ChallengeResponseAuthentication', line: 'ChallengeResponseAuthentication yes' }
+    - { regexp: '^UsePAM', line: 'UsePAM yes' }
+    - { regexp: '^PasswordAuthentication', line: 'PasswordAuthentication no' }
+  notify:
+    - Restart sshd
+
+- name: CENTOS check SELinux loaded modules
+  command: "semodule -l"
+  register: selinuxmodules
+  when: ansible_os_family == "RedHat"
+
+- name: CENTOS Install selinux-policy-devel
+  package:
+    name: selinux-policy-devel
+    state: present
+  when: (ansible_os_family == "RedHat") and ("selinuxmodules.stdout.find('vault-opt-allow') == -1")
+
+- name: CENTOS copy SELinux modules vault-opt access to /etc/vault-ssh-helper.d/
+  copy: src={{ item }} dest=/etc/vault-ssh-helper.d/ owner=root mode='0600'
+  with_items:
+    - vault-opt-allow.pp
+    - vault-opt-allow.te
+  when: (ansible_os_family == "RedHat") and ("selinuxmodules.stdout.find('vault-opt-allow') == -1")
+
+- name: CENTOS install SELinux module for vault-opt access
+  command: "semodule -i /etc/vault-ssh-helper.d/vault-opt-allow.pp"
+  when: (ansible_os_family == "RedHat") and ("selinuxmodules.stdout.find('vault-opt-allow') == -1")

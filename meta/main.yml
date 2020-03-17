@@ -1,0 +1,19 @@
+galaxy_info:
+  role_name: vault-otp
+  author: Laurent Kling
+  description: Configure One-Time SSH Password client with Hashicorp Vault and vault-ssh-helper
+  company: EPFL - STI - IT
+  license: MIT
+  min_ansible_version: 2.6
+
+  platforms:
+    - name: EL
+      versions:
+        - 7
+    - name: Ubuntu
+      versions:
+        - bionic
+
+  galaxy_tags: [vault, ssh, otp, security, hashicorp, vault-ssh-helper]
+
+dependencies: []
