@@ -14,6 +14,6 @@ galaxy_info:
       versions:
         - bionic
 
-  galaxy_tags: [vault, ssh, otp, security, hashicorp, vault-ssh-helper]
+  galaxy_tags: [vault, ssh, helper, otp, security, hashicorp, vaultsshhelper]
 
 dependencies: []
