@@ -2,9 +2,9 @@
 dependency:
   name: galaxy
 driver:
-  name: vagrant
+  name: docker
   provider:
-    name: virtualbox
+    name: docker
 lint:
   name: yamllint
 platforms:

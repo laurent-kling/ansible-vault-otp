@@ -1,0 +1,44 @@
+name: CI
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - centos-7
+          - ubuntu-20.04
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: "${{ github.repository }}"
+      # - uses: ansible/ansible-lint-action@master
+      # - uses: gofrolist/molecule-action@v2
+      #   with:
+      #     molecule_options: --debug --base-config molecule/_shared/base.yml
+      #     molecule_command: test
+      #     molecule_args: --scenario-name ${{ matrix.scenario }}
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v2
+      - uses: go-semantic-release/action@v1
+        id: semrel
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          update-file: package.json
+          changelog-file: CHANGELOG.md
+      - uses: rhysd/changelog-from-release/action@v2
+        if: steps.semrel.outputs.version != ''
+        with:
+          file: CHANGELOG.md
+          github_token: ${{ secrets.GITHUB_TOKEN }}
