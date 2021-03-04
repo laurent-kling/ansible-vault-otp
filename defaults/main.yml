@@ -1,5 +1,6 @@
 ---
 # defaults file for ansible-vault-otp
+vault_ssh_helper_version: "0.2.1"
 ssh_mount_point: ssh
 vault_ca_cert_file: "-dev" #only if the server is http !
 # minimum variables needed
