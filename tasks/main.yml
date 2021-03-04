@@ -33,9 +33,20 @@
     name: unzip
     state: present
 
+- name: set download src fact based on arch
+  block:
+  - name: ansible_architecture
+    when: ansible_architecture == "x86_64" or ansible_architecture == "amd64"
+    set_fact:
+      download_url: https://releases.hashicorp.com/vault-ssh-helper/{{ vault_ssh_helper_version }}/vault-ssh-helper_{{ vault_ssh_helper_version }}_linux_amd64.zip
+  - name: arm based download url
+    when: ansible_architecture == "aarch64" or ( ansible_architecture.find("arm") != -1 )
+    set_fact:
+      download_url: 'https://releases.hashicorp.com/vault-ssh-helper/{{ vault_ssh_helper_version }}/vault-ssh-helper_{{ vault_ssh_helper_version }}_linux_arm.zip'
+
 - name: Download the vault-ssh-helper and unzip it, make executable with root
   unarchive:
-    src: 'https://releases.hashicorp.com/vault-ssh-helper/0.1.4/vault-ssh-helper_0.1.4_linux_amd64.zip'
+    src: "{{ download_url }}"
     dest: /usr/local/bin
     remote_src: yes
     owner: root
@@ -58,8 +69,9 @@
     dest: /etc/vault-ssh-helper.d/config.hcl
 
 - name: Copy vault server certificate
+  when: vault_ca_cert_file != "-dev"
   copy:
-    src: "vault.crt"
+    src: "{{ vault_ca_cert_file }}"
     dest: "{{ ca_cert }}"
 
 - name: Verify vault-ssh-helper configuration
