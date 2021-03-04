@@ -35,7 +35,6 @@ jobs:
         id: semrel
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          update-file: package.json
           changelog-file: CHANGELOG.md
       - uses: rhysd/changelog-from-release/action@v2
         if: steps.semrel.outputs.version != ''
