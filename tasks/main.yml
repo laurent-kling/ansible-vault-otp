@@ -1,10 +1,9 @@
 ---
-# tasks file for ansible-vault-otp
 ## check minimum parameters
 - name: 0-Check required variables
-  fail: msg="Variable '{{ item }}' is not defined"
-  when: item not in vars
-  with_items: "{{ required_vars }}"
+  fail: msg="Variable '{{ item.checkvar }}' is not defined - {{ item.checkmsg }}"
+  when: item.checkvar not in vars
+  with_items: "{{ host_required_vars }}"
 
 - name: 0-Check coherence between Vault https and certificate file
   fail:
@@ -14,7 +13,6 @@
 - name: 0-Check vault status
   uri:
     url: "{{ vault_addr }}/v1/sys/seal-status"
-#    client_cert: "{{ vault_certfile }}"
     validate_certs: no
     method: GET
     body_format: json
@@ -116,7 +114,7 @@
     path: "/etc/pam.d/sshd"
     block: |
       auth requisite pam_exec.so quiet expose_authtok log=/var/log/vaultssh.log /usr/local/bin/vault-ssh-helper -config=/etc/vault-ssh-helper.d/config.hcl
-      auth optional pam_unix.so not_set_pass use_first_pass nodelay
+      auth optional pam_unix.so use_first_pass nodelay
     insertbefore: BOF
     state: present
   when: ansible_os_family == "Debian"
