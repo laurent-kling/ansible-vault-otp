@@ -4,7 +4,7 @@ vault_ssh_helper_version: "0.2.1"
 ssh_mount_point: ssh
 vault_ca_cert_file: "-dev" #only if the server is http !
 # vault namespace
-vault_namespace: None
+vault_namespace:
 # predefined variables
 tls_skip_verify: !!str true
 allowed_roles: "*"
