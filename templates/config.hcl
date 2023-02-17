@@ -1,5 +1,8 @@
 vault_addr = "{{ vault_addr }}"
 ssh_mount_point = "{{ ssh_mount_point }}"
+{% if vault_namespace is defined %}
+namespace = "{{ vault_namespace }}"
+{% endif %}
 {% if ca_cert is defined %}
 ca_cert = "{{ ca_cert }}"
 {% endif %}

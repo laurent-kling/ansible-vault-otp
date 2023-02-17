@@ -1,0 +1,5 @@
+# minimum variables needed
+required_vars:
+ - vault_addr
+ - ssh_mount_point
+ - vault_ca_cert_file
