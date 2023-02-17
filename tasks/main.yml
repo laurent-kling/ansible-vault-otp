@@ -67,7 +67,7 @@
     dest: /etc/vault-ssh-helper.d/config.hcl
 
 - name: Copy vault server certificate
-  when: vault_ca_cert_file != "" and vault_ca_cert_file != "-dev"
+  when: !( vault_ca_cert_file == "" or vault_ca_cert_file != "-dev" )
   copy:
     src: "{{ vault_ca_cert_file }}"
     dest: "{{ ca_cert }}"
