@@ -3,7 +3,7 @@ ssh_mount_point = "{{ ssh_mount_point }}"
 {% if vault_namespace is defined %}
 namespace = "{{ vault_namespace }}"
 {% endif %}
-{% if ca_cert is defined %}
+{% if ca_cert != "" %}
 ca_cert = "{{ ca_cert }}"
 {% endif %}
 {% if ca_path is defined %}
